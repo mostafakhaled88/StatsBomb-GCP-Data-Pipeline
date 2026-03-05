@@ -1,0 +1,21 @@
+python -m ingestion.fetch_competitions
+python -m ingestion.fetch_matches
+python -m ingestion.fetch_events_parallel --matches_csv data/matches.csv --workers 5
+
+
+python -m dataflow.pipelines.competitions_pipeline --runner DirectRunner
+python -m dataflow.pipelines.matches_pipeline --runner DirectRunner
+python -m dataflow.pipelines.events_pipeline ^
+--runner DataflowRunner ^
+--project civil-hull-489201-q7 ^
+--region us-central1 ^
+--temp_location gs://statsbomb-raw-data/temp/ ^
+--setup_file ./setup.py ^
+--save_main_session True ^
+--worker_machine_type e2-standard-4 ^
+--number_of_worker_harness_threads 1 ^
+--input_path "gs://statsbomb-raw-data/events/**/events.json" ^
+--output_table "civil-hull-489201-q7:statsbomb_raw.events" ^
+--lineup_table "civil-hull-489201-q7:statsbomb_raw.lineups" ^
+--deadletter_table "civil-hull-489201-q7:statsbomb_raw.dlq_parsing" ^
+--bq_errors_table "civil-hull-489201-q7:statsbomb_raw.dlq_bq_inserts"
